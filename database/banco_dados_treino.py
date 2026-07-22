@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 # Serve para criar as tabelas do banco de dados
 
-db = create_engine("sqlite:///database.db")
+db = create_engine("sqlite:///banco_dados_treino.db")
 #Cria o banco de dados
 # db é a variável que será criada o banco de dados
 # Create engine é o nome da função sqlalchemy que cria um banco de dados
