@@ -16,10 +16,11 @@ from sqlalchemy import (
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import declarative_base
 
-database = create_engine("sqlite:///database.db")
+from datetime import datetime
+
+database = create_engine("sqlite:///database/database.db")
 
 Session = sessionmaker(bind=database)
-session = Session()
 
 Base = declarative_base()
 
@@ -99,60 +100,45 @@ class Estoque(Base):
     id_estoque = Column("id_estoque", Integer, primary_key=True, autoincrement=True)
     id_churrasqueira = Column("id_churrasqueira", Integer, ForeignKey("Churrasqueira.id_churrasqueira"))
     quantidade_disponivel = Column("quantidade_disponivel", Integer)
-    data_atualizacao = Column("data_atualizacao_estoque", DateTime)
+    data_atualizacao = Column("data_atualizacao_estoque", DateTime, default=datetime.now, onupdate=datetime.now)
 
-    def __init__(self, id_churrasqueira, quantidade_disponivel, data_atualizacao):
+    def __init__(self, id_churrasqueira, quantidade_disponivel):
         self.id_churrasqueira = id_churrasqueira
         self.quantidade_disponivel = quantidade_disponivel
-        self.data_atualizacao = data_atualizacao
 
     # obterSaldo() - Int
     # atualizarQuantidade() - void
     # verificarDisponibilidade(qtd) - boolean
 
-
-# ARRUMAR NO DIAGRAMA DE CLASSE, CRIANDO A CLASSE CANCELAMENTO (QUE ESTARÁ A SEGUIR)
-class Cancelamento(Base):
-    __tablename__ = "Cancelamento_de_alguma_coisa"
-
-    id_cancelamento = Column("id_cancelamento", Integer, primary_key=True, autoincrement=True)
-    cancelado = Column("cancelamento", Boolean)
-    data_cancelamento = Column("data_cancelamento", DateTime)
-    motivo_cancelamento = Column("motivo_cancelamento", VARCHAR)
-
-    def __init__(self, cancelado, data_cancelamento, motivo_cancelamento):
-        self.cancelado = cancelado
-        self.data_cancelamento = data_cancelamento
-        self.motivo_cancelamento = motivo_cancelamento
-
-    # cancelar(motivo) - Void
-
-
-# ARRUMAR NO DIAGRAMA DE CLASSE, CRIANDO A CLASSE CANCELAMENTO (QUE ESTARÁ A SEGUIR)
 class Abastecimento(Base):
-    __tablename__ = "Abastecimento Estoque"
+    __tablename__ = "Abastecimento_Estoque"
 
     id_abastecimento = Column("id_abastecimento", Integer, primary_key=True, autoincrement=True)
     id_usuario = Column("id_usuario", Integer, ForeignKey("Usuarios.id_usuario"))
     data_abastecimento = Column("data_abastecimento", DateTime)
     observacoes = Column("observacoes_abastecimento", VARCHAR)
-    cancelado = Column("cancelamento_abastecimento", Boolean, ForeignKey("Cancelamento.cancelado"))
+    cancelado = Column("cancelamento_abastecimento", Boolean)
+    data_cancelamento = Column("data_cancelamento", DateTime)
+    motivo_cancelamento = Column("motivo_cancelamento", VARCHAR)
 
-    def __init__(self, id_abastecimento, id_usuario, data_abastecimento, observacoes, cancelado):
+    def __init__(self, id_abastecimento, id_usuario, data_abastecimento, observacoes, cancelado, data_cancelamento, motivo_cancelamento):
         self.id_abastecimento = id_abastecimento
         self.id_usuario = id_usuario
         self.data_abastecimento = data_abastecimento
         self.observacoes = observacoes
         self.cancelado = cancelado
+        self.data_cancelamento = data_cancelamento
+        self.motivo_cancelamento = motivo_cancelamento
 
     # cadastrar() - Void
+    # cancelar(motivo) - Void
     # listar(filtros) - list<abastecimentos>
 
 class Item_abastecimento(Base):
     __tablename__ = "qual_item_abastecimento"
 
     id_item_abastecimento = Column("id_item_abastecimento", Integer, primary_key=True, autoincrement=True)
-    id_abastecimento = Column("id_abastecimento", Integer, ForeignKey("Abastecimento.id_abastecimento"))
+    id_abastecimento = Column("id_abastecimento", Integer, ForeignKey("Abastecimento_Estoque.id_abastecimento"))
     id_churrasqueira = Column("id_churrasqueira", Integer, ForeignKey("Churrasqueira.id_churrasqueira"))
     quantidade = Column("quantidade_abastecimento", Integer)
 
@@ -264,13 +250,15 @@ class Venda(Base):
     id_venda = Column("id_venda", Integer, primary_key=True, autoincrement=True)
     id_usuario = Column("id_usuario", Integer, ForeignKey("Usuarios.id_usuario"))
     id_cliente = Column("id_cliente", Integer, ForeignKey("Clientes.id_cliente"))
-    forma_pagamento = Column("nome_forma_pagamento", VARCHAR, ForeignKey("Forma_pagamento.nome_forma_pagamento"))
+    forma_pagamento = Column("id_forma_pagamento", Integer, ForeignKey("Forma_pagamento.id_forma_pagamento"))
     data_venda = Column("data_venda", DateTime)
     valor_total = Column("valor_total_venda", DECIMAL)
     observacoes = Column("observacoes_venda", VARCHAR)
     status = Column("status_venda", Enum("concluida", "cancelada", "pendente", name="status_venda"))
+    data_cancelamento = Column("data_cancelamento_venda", DateTime)
+    motivo_cancelamento = Column("motivo_cancelamento_venda", VARCHAR)
 
-    def __init__(self, id_usuario, id_cliente, data_venda, forma_pagamento, valor_total, observacoes, status):
+    def __init__(self, id_usuario, id_cliente, data_venda, forma_pagamento, valor_total, observacoes, status, data_cancelamento, motivo_cancelamento):
         self.id_usuario = id_usuario
         self.id_cliente = id_cliente
         self.data_venda = data_venda
@@ -278,8 +266,11 @@ class Venda(Base):
         self.valor_total = valor_total
         self.observacoes = observacoes
         self.status = status
+        self.data_cancelamento = data_cancelamento
+        self.motivo_cancelamento = motivo_cancelamento
 
     # registrar() - Void
+    # cancelar() - Void
     # consultar(filtros) - list<Venda>
 
 class Item_venda(Base):
@@ -308,8 +299,7 @@ class Forma_pagamento(Base):
     nome = Column("nome_forma_pagamento", VARCHAR, unique=True)
     ativo = Column("ativo_forma_pagamento", Boolean)
 
-    def __init__(self, id_forma_pagamento, nome, ativo):
-        self.id_forma_pagamento = id_forma_pagamento
+    def __init__(self, nome, ativo=True):
         self.nome = nome
         self.ativo = ativo
 
@@ -338,7 +328,7 @@ class Relatorio(Base):
 
 
 
-Base.metadata.create_all(bind=database)
+Base.metadata.create_all(database)
 
 # ====================CRIAR INSTÂNCIA DA TABELA=====================
 
