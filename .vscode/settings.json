@@ -1,3 +1,14 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/.venv": true,
+        "**/venv": true
+    },
+    "python.analysis.exclude": [
+        "**/__pycache__",
+        "**/.venv",
+        "**/venv"
+    ]
 }
